@@ -30,7 +30,7 @@ export default function MainLayout({
           {children}
         </main>
         {!hideRightSidebar && (
-          <div className="border-l border-gray-700 bg-white">
+          <div className="border-l border-gray-700 bg-green-300">
             <RightSidebar />
           </div>
         )}
