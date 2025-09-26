@@ -21,7 +21,7 @@ export default function LeftSidebar() {
   const pathname = usePathname()
 
   return (
-    <header className="w-64 p-4 flex flex-col justify-between h-screen sticky top-0">
+    <header className="w-64 p-4 flex flex-col justify-between h-screen sticky top-0 bg-green-300">
       <div>
         <div className="mb-8">
           <Link href="/" className="text-2xl font-bold text-sky-400">
