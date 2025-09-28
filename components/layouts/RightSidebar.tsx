@@ -2,7 +2,7 @@
 
 export default function RightSidebar() {
   return (
-    <div>
+    <div className="text-black">
       右サイドバーの内容だよ
     </div>
   );

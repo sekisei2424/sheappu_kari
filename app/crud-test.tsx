@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
 import {
-  createUserProfile, getUserProfile,
+  createUserProfile, getUserProfileById,
 } from '../lib/crud/users';
 import {
   createExperience, getExperiences, updateExperience, deleteExperience,
@@ -33,7 +33,7 @@ const runAllTests = async () => {
   console.log('\n✅ usersテーブルのCRUDテスト');
   await createUserProfile(TEST_USER_ID_1, 'Test User 1', 'test1@example.com');
   await createUserProfile(TEST_USER_ID_2, 'Test User 2', 'test2@example.com');
-  const user1 = await getUserProfile(TEST_USER_ID_1);
+  const user1 = await getUserProfileById(TEST_USER_ID_1);
   console.log('取得したユーザー1:', user1.data);
 
   // **お仕事体験テーブル (experiences)**

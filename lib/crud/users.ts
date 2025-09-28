@@ -11,22 +11,24 @@ export const createUserProfile = async (id: string, name: string, email: string)
   return { data, error };
 };
 
-// ユーザー情報を取得
-export const getUserProfile = async (id: string) => {
+// ユーザーIDで取得
+export const getUserProfileById = async (id: string) => {
   const { data, error } = await supabase
     .from('users')
     .select('*')
-    .eq('id', id)
+    .eq("id", id)
     .single();
+
   return { data, error };
 };
 
-// ユーザー情報を更新
-export const updateUserProfile = async (id: string, updateData: { name?: string, is_organizer?: boolean }) => {
+// ユーザー名で取得
+export const getUserProfileByUsername = async (username: string) => {
   const { data, error } = await supabase
     .from('users')
-    .update(updateData)
-    .eq('id', id)
-    .select();
+    .select('*')
+    .eq("username", username.toLowerCase()) // 小文字に統一
+    .single();
+
   return { data, error };
 };

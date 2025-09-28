@@ -1,35 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getCurrentUser } from "@/lib/auth";
-import { getUserProfile } from "@/lib/crud/users";
+import { useParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase/client";
+import { UserProfile } from "@/lib/types";
+import { PostgrestSingleResponse } from "@supabase/supabase-js";
 
-type UserProfile = {
-  id: string;
-  name: string;
-  username: string;
-  avatar_url?: string;
-  banner_url?: string;
-  bio?: string;
-  following?: number;
-  followers?: number;
-};
+export default function UserProfilePage() {
+  const params = useParams();
+  const username = params?.username ?? "";
 
-export default function UserProfilePage({ params }: { params: { username: string } }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
 
   useEffect(() => {
-    const loadUser = async () => {
-      const currentUser = await getCurrentUser();
-      if (currentUser) {
-        const { data } = await getUserProfile(currentUser.id);
-        setUser(data);
-      }
-    };
-    loadUser();
-  }, []);
+    if (!username) return;
 
-  if (!user) return <p>Loading...</p>;
+    const loadProfile = async () => {
+      console.log("取得しようとしているusername:", username);
+      const { data, error }: PostgrestSingleResponse<UserProfile> =
+        await supabase
+          .from("users")
+          .select("*")
+          .eq("auth_id", username)
+          .single();
+
+      if (error) {
+        console.error("プロフィール取得エラー:", error);
+        setError(error);
+        setProfile(null);
+      } else {
+        setProfile(data);
+      }
+
+      setLoading(false);
+    };
+
+    loadProfile();
+  }, [username]);
+
+  if (loading) return <p>プロフィール取得中...</p>;
+  if (error) return <p>プロフィール取得中にエラーが発生しました</p>;
+  if (!profile) return <p>プロフィールが見つかりません</p>;
 
   return (
     <div>
@@ -37,8 +50,12 @@ export default function UserProfilePage({ params }: { params: { username: string
         <div className="relative">
           <div className="absolute -bottom-16 left-4">
             <div className="border-4 border-gray-900 rounded-full">
-              {user.avatar_url && (
-                <img src={user.avatar_url} alt="アバター" className="w-32 h-32 rounded-full" />
+              {profile.avatar_url && (
+                <img
+                  src={profile.avatar_url}
+                  alt="アバター"
+                  className="w-32 h-32 rounded-full"
+                />
               )}
             </div>
           </div>
@@ -49,15 +66,17 @@ export default function UserProfilePage({ params }: { params: { username: string
               プロフィールを編集
             </button>
           </div>
-          <h1 className="text-2xl font-bold">{user.name}</h1>
-          <p className="text-gray-500">@{user.username}</p>
-          <p className="mt-4">{user.bio}</p>
+          <h1 className="text-2xl font-bold">{profile.name}</h1>
+          <p className="text-gray-500">@{profile.name}</p>
+          <p className="mt-4">{profile.bio}</p>
           <div className="flex space-x-4 mt-4 text-gray-500">
             <p>
-              <span className="font-bold text-white">{user.following}</span> フォロー中
+              <span className="font-bold text-white">{profile.following}</span>{" "}
+              フォロー中
             </p>
             <p>
-              <span className="font-bold text-white">{user.followers}</span> フォロワー
+              <span className="font-bold text-white">{profile.followers}</span>{" "}
+              フォロワー
             </p>
           </div>
         </div>
