@@ -17,22 +17,20 @@ export default function MainLayout({
   );
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen">
-      <div className="container mx-auto grid grid-cols-4">
-        <div className="border-r border-gray-700">
+    <div className="flex w-full min-h-screen text-white">
+      <div className="flex w-full">
+        <header className="w-100 flex-shrink-0">
           <LeftSidebar />
-        </div>
-        <main
-          className={`border-x border-gray-700 ${
-            hideRightSidebar ? "col-span-3" : "col-span-2"
-          }`}
-        >
+        </header>
+
+        <main className="w-full flex-grow border-x border-gray-700 bg-white">
           {children}
         </main>
+
         {!hideRightSidebar && (
-          <div className="border-l border-gray-700">
+          <aside className="w-100 pl-4 flex-shrink-0 bg-green-300">
             <RightSidebar />
-          </div>
+          </aside>
         )}
       </div>
     </div>

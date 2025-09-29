@@ -21,3 +21,14 @@ export type Tend = {
   imageUrl: string;
   author: User;
 };
+
+export type UserProfile = {
+  id: string;
+  auth_id: string;
+  name: string;
+  avatar_url?: string;
+  banner_url?: string;
+  bio?: string;
+  following?: number;
+  followers?: number;
+};
