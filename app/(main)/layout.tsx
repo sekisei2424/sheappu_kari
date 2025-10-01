@@ -19,16 +19,16 @@ export default function MainLayout({
   return (
     <div className="flex w-full min-h-screen text-white">
       <div className="flex w-full">
-        <header className="w-100 flex-shrink-0">
+        <header className="w-15 lg:w-85 flex-shrink-0">
           <LeftSidebar />
         </header>
 
-        <main className="w-full flex-grow border-x border-gray-700 bg-white">
+        <main className="w-170 border-x border-gray-700 bg-white">
           {children}
         </main>
 
         {!hideRightSidebar && (
-          <aside className="w-100 pl-4 flex-shrink-0 bg-green-300">
+          <aside className="hidden md:block flex-grow pl-4 flex-shrink-0 bg-green-300">
             <RightSidebar />
           </aside>
         )}
