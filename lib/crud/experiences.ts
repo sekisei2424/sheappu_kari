@@ -3,7 +3,8 @@ import { supabase } from '../supabase/client';
 interface ExperienceData {
   title: string;
   description: string;
-  organizer_id: string;
+  organizer_id: string; // UUIDに変更
+  user_id?: string;      // UUIDに変更
   location: string;
   date: string;
   post_type: number;
