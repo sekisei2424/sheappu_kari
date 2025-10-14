@@ -1,7 +1,7 @@
 import { supabase } from '../supabase/client';
 
 // スワイプ操作を記録
-export const createSwipe = async (userId: string, experienceId: string, direction: number) => {
+export const createSwipe = async (userId: string, experienceId: string, direction: number) => { // IDをstringに
   const { data, error } = await supabase
     .from('tend')
     .insert([
@@ -12,7 +12,7 @@ export const createSwipe = async (userId: string, experienceId: string, directio
 };
 
 // 特定のユーザーのスワイプ履歴を取得
-export const getSwipesByUser = async (userId: string) => {
+export const getSwipesByUser = async (userId: string) => { // userIdをstringに
   const { data, error } = await supabase
     .from('tend')
     .select('*')

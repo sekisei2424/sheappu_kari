@@ -1,7 +1,7 @@
 import { supabase } from '../supabase/client';
 
 // いいねを作成
-export const createLike = async (userId: string, experienceId: string) => {
+export const createLike = async (userId: string, experienceId: string) => { // user/experienceIdをstringに
   const { data, error } = await supabase
     .from('likes')
     .insert([
@@ -12,7 +12,7 @@ export const createLike = async (userId: string, experienceId: string) => {
 };
 
 // お仕事体験のいいね数を取得
-export const getLikesCount = async (experienceId: string) => {
+export const getLikesCount = async (experienceId: string) => { // experienceIdをstringに
   const { count, error } = await supabase
     .from('likes')
     .select('*', { count: 'exact', head: true })
@@ -21,11 +21,11 @@ export const getLikesCount = async (experienceId: string) => {
 };
 
 // いいねを削除
-export const deleteLike = async (id: string) => {
+export const deleteLike = async (likeId: string) => {
   const { data, error } = await supabase
     .from('likes')
     .delete()
-    .eq('id', id)
+    .eq('id', likeId)
     .select();
   return { data, error };
 };
