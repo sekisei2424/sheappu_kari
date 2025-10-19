@@ -1,102 +1,112 @@
 'use client';
-import { useEffect } from 'react';
-// import { supabase } from '../lib/supabase/client'; // client.tsはインポート済みと仮定
-import { getUserProfile, updateUserProfile } from '@/lib/crud/profiles';
-import { createExperience, getExperienceById, deleteExperience } from '@/lib/crud/experiences';
-import { createBooking, deleteBooking } from '@/lib/crud/booking';
-import { createLike, deleteLike, getLikesCount } from '@/lib/crud/likes';
-import { createSwipe, getSwipesByUser } from '@/lib/crud/tend';
+import { useEffect, useState } from 'react';
+import { createListing } from '@/lib/crud/listings'; // 募集作成
+import { deletePost } from '@/lib/crud/posts';
+import { getPostById } from '@/lib/crud/posts'; // 投稿取得
+import ExperienceImageUploader from '@/components/features/ImageUploader';
+import Image from 'next/image';
 
+// !!! 実行前に必ず以下の値を置き換えてください !!!
+const TEST_USER_ID = 'c1c87a27-f7c0-4053-85c5-1a4ed85b7372'; 
+const TEST_EXPERIENCE_ID = 'e1a2b3c4-f5d6-7890-1234-567890abcdef'; 
 
-// =========================================================================
-// !!! 実行前に必ずこの値をサインアップで取得したUUIDに置き換えてください !!!
-// =========================================================================
-const TEST_USER_ID = 'c1c87a27-f7c0-4053-85c5-1a4ed85b7372';
-const TEST_EXPERIENCE_ID = 'a1b2c3d4-e5f6-7890-1234-567890abcdef'; // ランダムなUUID
+export default function CrudTester() {
+  const [listingId, setListingId] = useState('');
+  const [message, setMessage] = useState('テスト準備完了');
+  const [uploadedImageUrl, setUploadedImageUrl] = useState('');
 
+  const runTest = async () => {
+    if (TEST_USER_ID.includes('ここにサインアップで取得したUUID')) {
+        setMessage('🚨 TEST_USER_ID を実際のUUIDに置き換えてからリロードしてください。');
+        return;
+    }
+    
+    // --- 1. 募集の作成 (Create Listing) ---
+    setMessage('1. 募集を作成中...');
+    const listingData = {
+        title: "統合テスト用案件",
+        description: "募集作成と画像アップロードのテスト。",
+        location: "東京",
+        date: "2026-03-01",
+        organizer_id: TEST_USER_ID, 
+        slots_available: 5,
+        application_deadline: new Date(Date.now() + 86400000).toISOString(),
+        status: 'open',
+    };
+    
+    const { data, error } = await createListing(listingData);
 
-const CrudTester = () => {
-    useEffect(() => {
-        // 欠けているdeleteSwipe関数をここで定義（tend.tsに移動してもOK）
-        const deleteSwipe = async (id: string) => {
-            // supabaseはここで直接使えないため、client.tsからのインポートが必要です
-            // 実際のコードでは、tend.tsからインポートして使用してください
-            console.log(`[Cleaner] テンポラリでスワイプID ${id} を削除`);
-            // await deleteSwipeFromCrud(id); // lib/crud/tend.ts にこの関数を追加して呼び出す
-        };
+    if (error) {
+        console.error('募集作成エラー:', error);
+        setMessage('🚨 募集作成に失敗しました (コンソール確認)');
+        return;
+    }
 
-        const runCrudTests = async () => {
-            if (TEST_USER_ID === 'ここにサインアップで取得したUUIDを貼り付ける') {
-                console.error('🚨 TEST_USER_ID を実際の UUID に置き換えてから実行してください。');
-                return;
-            }
+    const newPostId = data.post.id;
+    setListingId(newPostId);
+    setMessage(`✅ 募集作成成功！Post ID: ${newPostId}。画像アップロードに進んでください。`);
+    
+    // --- 2. 作成された募集の Read テスト ---
+    const readResult = await getPostById(newPostId);
+    console.log('✅ 募集 Read 成功 (データ確認):', readResult.data);
+  };
+  
+  const handleCleanup = async () => {
+    if (!listingId) return;
+    await deletePost(listingId);
+    setListingId('');
+    setUploadedImageUrl('');
+    setMessage('🗑️ テストデータ削除完了。');
+  };
 
-            console.log('--- UUID ベース CRUD テスト開始 ---');
-            let bookingId = '';
-            let likeId = '';
-            let swipeId = '';
+  useEffect(() => {
+    // ページロード時に、以前のデータをクリーンアップしてから新しいテストを開始
+    // NOTE: 開発環境で無限ループを防ぐため、このuseEffectは手動実行などに切り替えるのが望ましい
+    // runTest(); 
+  }, []);
 
-            // -----------------------------------------------------
-            // 1. profiles (Read & Update)
-            // -----------------------------------------------------
-            const profileRead = await getUserProfile(TEST_USER_ID);
-            console.log('✅ プロフィール Read 成功:', profileRead.data);
-            await updateUserProfile(TEST_USER_ID, { name: 'テストユーザー (更新済み)' });
+  return (
+    <div className="p-6">
+      <h1 className="text-3xl font-bold">統合テスト</h1>
+      <p className="mb-4">ユーザーID: {TEST_USER_ID}</p>
+      <p className="mb-4 text-lg font-semibold" style={{ color: message.startsWith('🚨') ? 'red' : 'green' }}>{message}</p>
 
+      {/* 実行ボタン */}
+      <button 
+        onClick={runTest} 
+        disabled={!!listingId}
+        className="p-2 bg-green-500 text-white rounded disabled:bg-gray-400 mr-2"
+      >
+        1. 募集作成 (Post & Listing Create)
+      </button>
 
-            // -----------------------------------------------------
-            // 2. experiences (Create & Read)
-            // -----------------------------------------------------
-            const expData = { id: TEST_EXPERIENCE_ID, title: "テスト体験", description: "テスト", organizer_id: TEST_USER_ID, location: "オンライン", date: "2026-01-01", post_type: 0 };
-            const expCreate = await createExperience(expData);
-            console.log('✅ Experience Create 成功:', expCreate.data);
-            await getExperienceById(TEST_EXPERIENCE_ID);
-
-
-            // -----------------------------------------------------
-            // 3. booking, likes, tend (Create & Delete)
-            // -----------------------------------------------------
-            const bookingCreate = await createBooking(TEST_USER_ID, TEST_EXPERIENCE_ID);
-            bookingId = bookingCreate.data?.[0]?.id;
-            console.log('✅ Booking Create 成功:', bookingId);
-
-            const likeCreate = await createLike(TEST_USER_ID, TEST_EXPERIENCE_ID);
-            likeId = likeCreate.data?.[0]?.id;
-            console.log('✅ Like Create 成功:', likeId);
-            await getLikesCount(TEST_EXPERIENCE_ID);
-
-            const swipeCreate = await createSwipe(TEST_USER_ID, TEST_EXPERIENCE_ID, 1);
-            swipeId = swipeCreate.data?.[0]?.id;
-            console.log('✅ Swipe Create 成功:', swipeId);
-            await getSwipesByUser(TEST_USER_ID);
-
-
-            // -----------------------------------------------------
-            // 4. クリーンアップ
-            // -----------------------------------------------------
-            console.log('\n--- クリーンアップ ---');
-            if (bookingId) await deleteBooking(bookingId);
-            if (likeId) await deleteLike(likeId);
-            if (swipeId) {
-                // 実際のdelete関数を呼び出す
-                // await deleteSwipe(swipeId);
-                console.log(`✅ Swipe Delete スキップ (手動でDB確認)`);
-            }
-            await deleteExperience(TEST_EXPERIENCE_ID);
-
-            console.log('\n--- すべての CRUD テストが完了しました！ ---');
-        };
-
-        runCrudTests();
-    }, []);
-
-    return (
-        <div>
-            <h2 className="text-xl font-bold">CRUD Tester (Client Component)</h2>
-            <p>テスト結果はブラウザの**コンソール**を確認してください。</p>
-            <p className="text-red-500">※テストIDを貼り付けた後、ページをリロードしてください。</p>
+      {/* 2. 画像アップロード (手動) */}
+      {listingId && (
+        <div className="mt-6 p-4 border rounded shadow-md">
+          <h2 className="text-xl font-semibold mb-3">2. 画像アップロードテスト (Storage + DB)</h2>
+          <ExperienceImageUploader
+            postId={listingId}
+            userId={TEST_USER_ID}
+            onUploadSuccess={setUploadedImageUrl}
+          />
+          {uploadedImageUrl && (
+            <div className="mt-4">
+              <p>画像URLがDBに記録されました。</p>
+              <Image src={uploadedImageUrl} alt="Uploaded" width={100} height={100} unoptimized />
+            </div>
+          )}
         </div>
-    );
-};
-
-export default CrudTester;
+      )}
+      
+      {/* 3. クリーンアップ */}
+      <button 
+        onClick={handleCleanup} 
+        className="p-2 bg-red-500 text-white rounded mt-4"
+      >
+        3. テストデータ削除 (Cleanup)
+      </button>
+      
+      {listingId && <p className="mt-4 text-sm">現在の募集ID: {listingId}</p>}
+    </div>
+  );
+}
