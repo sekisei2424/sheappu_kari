@@ -1,27 +1,30 @@
 import { supabase } from '../supabase/client';
 
 // いいねを作成
-export const createLike = async (userId: string, experienceId: string) => { // user/experienceIdをstringに
+export const createLike = async (userId: string, postId: string) => { // experienceId を postId に変更
   const { data, error } = await supabase
     .from('likes')
     .insert([
-      { user_id: userId, experience_id: experienceId }
+      // experience_id を post_id に変更
+      { user_id: userId, post_id: postId }
     ])
     .select();
   return { data, error };
 };
 
-// お仕事体験のいいね数を取得
-export const getLikesCount = async (experienceId: string) => { // experienceIdをstringに
+// 投稿のいいね数を取得
+export const getLikesCount = async (postId: string) => { // experienceId を postId に変更
   const { count, error } = await supabase
     .from('likes')
     .select('*', { count: 'exact', head: true })
-    .eq('experience_id', experienceId);
+    // 検索カラムを post_id に変更
+    .eq('post_id', postId);
   return { count, error };
 };
 
 // いいねを削除
 export const deleteLike = async (likeId: string) => {
+  // 主キーの削除なので変更不要
   const { data, error } = await supabase
     .from('likes')
     .delete()
