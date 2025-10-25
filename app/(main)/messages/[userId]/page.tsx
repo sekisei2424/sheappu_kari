@@ -1,4 +1,4 @@
-export default function TendPage() {
+export default function MessagesPage() {
     return (
         <div>
             <header className="sticky top-0 bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 p-4">
