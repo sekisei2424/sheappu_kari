@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getListingById, type ListingWithPost } from "@/lib/crud/listings";
 import { createBooking } from "@/lib/crud/booking";
 import { useUser } from "@/hooks/useUser";
+import { getExperienceById, type Experience } from "@/lib/crud/experiences";
 
 export type ListingDetailProps = {
   id: string;
@@ -17,6 +18,7 @@ export default function ListingDetail({ id, onApplied }: ListingDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
+  const [experience, setExperience] = useState<Experience | null>(null);
   const router = useRouter();
   const { user } = useUser();
 
@@ -29,6 +31,13 @@ export default function ListingDetail({ id, onApplied }: ListingDetailProps) {
         setError("募集情報の取得に失敗しました");
       }
       setListing(data ?? null);
+
+      // experiences テーブルにも同一IDがある想定（listings.post_id = experiences.id）
+      const { data: exp, error: expErr } = await getExperienceById(id);
+      if (expErr) {
+        console.warn("getExperienceById warn", expErr);
+      }
+      setExperience(exp ?? null);
       setLoading(false);
     };
     run();
@@ -72,15 +81,19 @@ export default function ListingDetail({ id, onApplied }: ListingDetailProps) {
   }
 
   const p = listing.posts;
+  const title = experience?.title ?? p?.title ?? "募集詳細";
+  const description = experience?.description ?? p?.description ?? null;
+  const location = experience?.location ?? p?.location ?? "場所未定";
+  const dateStr = experience?.date ?? p?.date ?? null;
 
   return (
     <div className="p-4 max-w-xl mx-auto space-y-4">
-      <h1 className="text-2xl font-bold">{p?.title ?? "募集詳細"}</h1>
-      {p?.description && <p className="text-gray-700">{p.description}</p>}
+      <h1 className="text-2xl font-bold">{title}</h1>
+      {description && <p className="text-gray-700">{description}</p>}
       <div className="text-sm text-gray-600 flex gap-2">
-        <span>{p?.location ?? "場所未定"}</span>
+        <span>{location}</span>
         <span>・</span>
-        <span>{p?.date ? new Date(p.date).toLocaleDateString() : "日程未定"}</span>
+        <span>{dateStr ? new Date(dateStr).toLocaleDateString() : "日程未定"}</span>
       </div>
 
       <div className="rounded-lg bg-white border p-3">
@@ -89,6 +102,12 @@ export default function ListingDetail({ id, onApplied }: ListingDetailProps) {
             <div className="text-gray-500">募集状況</div>
             <div className="font-medium">{listing.status}</div>
           </div>
+          {experience?.organizer_name && (
+            <div>
+              <div className="text-gray-500">主催</div>
+              <div className="font-medium">{experience.organizer_name}</div>
+            </div>
+          )}
           <div>
             <div className="text-gray-500">募集枠</div>
             <div className="font-medium">{listing.slots_available}</div>
