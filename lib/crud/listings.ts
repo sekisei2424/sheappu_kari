@@ -103,7 +103,7 @@ export const getListingById = async (id: string) => {
   const { data, error } = await supabase
     .from('listings')
     .select(
-      `id, post_id, organizer_id, slots_available, application_deadline, status,
+      `post_id, organizer_id, slots_available, application_deadline, status,
        posts:post_id ( id, title, description, location, date )`
     )
     .eq('post_id', id)
@@ -117,7 +117,7 @@ export const listListings = async (limit = 20, offset = 0) => {
   const { data, error } = await supabase
     .from('listings')
     .select(
-      `id, post_id, organizer_id, slots_available, application_deadline, status,
+      `post_id, organizer_id, slots_available, application_deadline, status,
        posts:post_id ( id, title, description, location, date )`
     )
     // created_at が無い想定のため post_id の降順（= 新しい投稿ほどUUIDが後）で代替
