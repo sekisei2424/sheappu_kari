@@ -78,3 +78,50 @@ export const updateListing = async (postId: string, updateData: Partial<ListingD
 
   return { data, error };
 };
+
+// -----------------------------------------------------
+// Read (募集の取得)
+// -----------------------------------------------------
+export type ListingWithPost = {
+  id: string;
+  post_id: string;
+  organizer_id: string;
+  slots_available: number;
+  application_deadline: string;
+  status: string;
+  posts: {
+    id: string;
+    title: string;
+    description: string;
+    location: string;
+    date: string;
+  } | null;
+};
+
+// 単一募集の取得（listings と posts を結合）
+export const getListingById = async (id: string) => {
+  const { data, error } = await supabase
+    .from('listings')
+    .select(
+      `id, post_id, organizer_id, slots_available, application_deadline, status,
+       posts:post_id ( id, title, description, location, date )`
+    )
+    .eq('id', id)
+    .maybeSingle<ListingWithPost>();
+
+  return { data, error };
+};
+
+// 募集一覧の取得（新着順）
+export const listListings = async (limit = 20, offset = 0) => {
+  const { data, error } = await supabase
+    .from('listings')
+    .select(
+      `id, post_id, organizer_id, slots_available, application_deadline, status,
+       posts:post_id ( id, title, description, location, date )`
+    )
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  return { data: (data as ListingWithPost[] | null) ?? null, error };
+};
