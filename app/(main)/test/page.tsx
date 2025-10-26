@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import CrudTester from '@/components/CrudTester';
 
 // App Routerではpage.tsxはデフォルトでサーバーコンポーネントです
@@ -14,3 +15,5 @@ export default function CrudTestPage() {
     </div>
   );
 }
+
+notFound();

@@ -18,12 +18,12 @@ export default function UserProfilePage() {
     if (!username) return;
 
     const loadProfile = async () => {
-      console.log("取得しようとしているusername:", username);
+      console.log("取得しようとしているid:", username);
       const { data, error }: PostgrestSingleResponse<UserProfile> =
         await supabase
-          .from("users")
+          .from("profiles")
           .select("*")
-          .eq("auth_id", username)
+          .eq("id", username)
           .single();
 
       if (error) {

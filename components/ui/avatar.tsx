@@ -1,20 +1,24 @@
-// import Image from 'next/image';
+import Image from 'next/image';
 
-// type AvatarProps = {
-//   src: string;
-//   alt: string;
-//   size?: number;
-// };
+// NOTE: Consider renaming this file to `Avatar.tsx` for PascalCase consistency on case-insensitive filesystems.
+// If you do, update any imports accordingly.
 
-// export const Avatar = ({ src, alt, size = 48 }: AvatarProps) => {
-//   return (
-//     <Image
-//       src={src}
-//       alt={alt}
-//       width={size}
-//       height={size}
-//       className="rounded-full object-cover"
-//       style={{ width: `${size}px`, height: `${size}px` }}
-//     />
-//   );
-// };
+type AvatarProps = {
+  src: string;
+  alt: string;
+  size?: number;
+  className?: string;
+};
+
+export function Avatar({ src, alt, size = 48, className = '' }: AvatarProps) {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={size}
+      height={size}
+      className={`rounded-full object-cover ${className}`}
+      style={{ width: `${size}px`, height: `${size}px` }}
+    />
+  );
+}

@@ -6,8 +6,10 @@ import RightSidebar from "@/components/layouts/RightSidebar";
 
 export default function MainLayout({
   children,
+  modal,
 }: {
   children: React.ReactNode;
+  modal?: React.ReactNode;
 }) {
   const pathname = usePathname();
 
@@ -28,10 +30,12 @@ export default function MainLayout({
         </main>
 
         {!hideRightSidebar && (
-          <aside className="hidden md:block flex-grow pl-4 flex-shrink-0 bg-green-300">
+          <aside className="hidden md:block flex-grow pl-4 flex-shrink-0 bg-green-500">
             <RightSidebar />
           </aside>
         )}
+        {/* Parallel route slot for modals */}
+        {modal}
       </div>
     </div>
   );
