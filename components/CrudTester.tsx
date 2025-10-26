@@ -43,13 +43,12 @@ export default function CrudTester() {
         return;
     }
 
-  const newPostId = data.post.id;
-    const newListingId = Array.isArray((data as any)?.listing)
-      ? (data as any).listing[0]?.id
-      : (data as any)?.listing?.id;
-  setPostId(newPostId);
-  setListingId(newListingId ?? '');
-  setMessage(`✅ 募集作成成功！Post ID: ${newPostId} / Listing ID: ${newListingId ?? '不明' }。画像アップロードに進んでください。`);
+    const newPostId = data.post.id;
+    // listings は post_id を主キーとして持つ構成のため、詳細ページも post_id で参照する
+    const newListingId = newPostId;
+    setPostId(newPostId);
+    setListingId(newListingId);
+    setMessage(`✅ 募集作成成功！Post ID = Listing(post_id): ${newPostId}。画像アップロードに進んでください。`);
     
     // --- 2. 作成された募集の Read テスト ---
     const readResult = await getPostById(newPostId);
@@ -78,7 +77,7 @@ export default function CrudTester() {
       <p className="mb-4 text-lg font-semibold" style={{ color: message.startsWith('🚨') ? 'red' : 'green' }}>{message}</p>
       {listingId && (
         <p className="mb-2 text-sm">
-          確認: /search/listings/<span className="font-mono">{listingId}</span> にアクセスで詳細ページが開きます（/search 経由の移動でモーダル表示）。
+          確認: /search/listings/<span className="font-mono">{listingId}</span> にアクセスで詳細ページ（listings.post_id ベース）が開きます（/search 経由の移動でモーダル表示）。
         </p>
       )}
 

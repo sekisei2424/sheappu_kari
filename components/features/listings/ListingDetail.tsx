@@ -44,7 +44,7 @@ export default function ListingDetail({ id, onApplied }: ListingDetailProps) {
 
     try {
       setApplying(true);
-      const { error } = await createBooking(user.id, listing.id);
+        const { error } = await createBooking(user.id, listing.post_id);
       if (error) {
         console.error("createBooking error", error);
         alert("応募に失敗しました。時間をおいて再度お試しください。");
