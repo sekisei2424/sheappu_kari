@@ -83,12 +83,13 @@ export const updateListing = async (postId: string, updateData: Partial<ListingD
 // Read (募集の取得)
 // -----------------------------------------------------
 export type ListingWithPost = {
-  post_id: string; // listings の主キー兼 FK（posts.id）
+  post_id: string; // listings の主キー兼 FK（posts/experiences.id）
   organizer_id: string;
   slots_available: number;
   application_deadline: string;
   status: string;
-  posts: {
+  // 以前は 'posts:post_id (...)' で join していたが、環境差異により join を外し、任意プロパティ化
+  posts?: {
     id: string;
     title: string;
     description: string;
@@ -102,10 +103,7 @@ export type ListingWithPost = {
 export const getListingById = async (id: string) => {
   const { data, error } = await supabase
     .from('listings')
-    .select(
-      `post_id, organizer_id, slots_available, application_deadline, status,
-       posts:post_id ( id, title, description, location, date )`
-    )
+    .select(`post_id, organizer_id, slots_available, application_deadline, status`)
     .eq('post_id', id)
     .maybeSingle<ListingWithPost>();
 
@@ -116,10 +114,7 @@ export const getListingById = async (id: string) => {
 export const listListings = async (limit = 20, offset = 0) => {
   const { data, error } = await supabase
     .from('listings')
-    .select(
-      `post_id, organizer_id, slots_available, application_deadline, status,
-       posts:post_id ( id, title, description, location, date )`
-    )
+    .select(`post_id, organizer_id, slots_available, application_deadline, status`)
     // created_at が無い想定のため post_id の降順（= 新しい投稿ほどUUIDが後）で代替
     .order('post_id', { ascending: false })
     .range(offset, offset + limit - 1);

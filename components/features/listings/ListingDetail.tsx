@@ -72,7 +72,7 @@ export default function ListingDetail({ id, onApplied }: ListingDetailProps) {
     return <div className="p-4">読み込み中...</div>;
   }
 
-  if (error || !listing) {
+  if (error) {
     return (
       <div className="p-4">
         <p className="text-red-500">{error ?? "募集が見つかりません"}</p>
@@ -80,7 +80,7 @@ export default function ListingDetail({ id, onApplied }: ListingDetailProps) {
     );
   }
 
-  const p = listing.posts;
+  const p = listing?.posts;
   const title = experience?.title ?? p?.title ?? "募集詳細";
   const description = experience?.description ?? p?.description ?? null;
   const location = experience?.location ?? p?.location ?? "場所未定";
@@ -100,7 +100,15 @@ export default function ListingDetail({ id, onApplied }: ListingDetailProps) {
         <div className="text-sm text-gray-700 grid grid-cols-2 gap-2">
           <div>
             <div className="text-gray-500">募集状況</div>
-            <div className="font-medium">{listing.status}</div>
+            <div className="font-medium">{listing ? listing.status : "公開準備中"}</div>
+          </div>
+          <div>
+            <div className="text-gray-500">募集枠</div>
+            <div className="font-medium">{listing ? listing.slots_available : "-"}</div>
+          </div>
+          <div>
+            <div className="text-gray-500">締切</div>
+            <div className="font-medium">{listing?.application_deadline ? new Date(listing.application_deadline).toLocaleDateString() : "未設定"}</div>
           </div>
           {experience?.organizer_name && (
             <div>
@@ -108,29 +116,23 @@ export default function ListingDetail({ id, onApplied }: ListingDetailProps) {
               <div className="font-medium">{experience.organizer_name}</div>
             </div>
           )}
-          <div>
-            <div className="text-gray-500">募集枠</div>
-            <div className="font-medium">{listing.slots_available}</div>
-          </div>
-          <div>
-            <div className="text-gray-500">締切</div>
-            <div className="font-medium">{new Date(listing.application_deadline).toLocaleDateString()}</div>
-          </div>
         </div>
       </div>
 
       <button
         onClick={handleApply}
-        disabled={applied || applying}
+        disabled={applied || applying || !listing}
         className={`w-full p-3 rounded-full text-white font-bold mt-2 transition ${
-          applied
+          !listing
+            ? "bg-gray-300 cursor-not-allowed"
+            : applied
             ? "bg-gray-400 cursor-not-allowed"
             : applying
             ? "bg-orange-400 cursor-wait"
             : "bg-orange-500 hover:bg-orange-600 active:scale-95 shadow-md"
         }`}
       >
-        {applied ? "応募済み" : applying ? "応募中..." : "この案件に応募する!"}
+        {!listing ? "現在応募準備中" : applied ? "応募済み" : applying ? "応募中..." : "この案件に応募する!"}
       </button>
 
       {!user && (
