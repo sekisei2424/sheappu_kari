@@ -78,3 +78,46 @@ export const updateListing = async (postId: string, updateData: Partial<ListingD
 
   return { data, error };
 };
+
+// -----------------------------------------------------
+// Read (募集の取得)
+// -----------------------------------------------------
+export type ListingWithPost = {
+  post_id: string; // listings の主キー兼 FK（posts/experiences.id）
+  organizer_id: string;
+  slots_available: number;
+  application_deadline: string;
+  status: string;
+  // 以前は 'posts:post_id (...)' で join していたが、環境差異により join を外し、任意プロパティ化
+  posts?: {
+    id: string;
+    title: string;
+    description: string;
+    location: string;
+    date: string;
+  } | null;
+};
+
+// 単一募集の取得（listings と posts を結合）
+// 引数 id は posts.id と同一（= listings.post_id）
+export const getListingById = async (id: string) => {
+  const { data, error } = await supabase
+    .from('listings')
+    .select(`post_id, organizer_id, slots_available, application_deadline, status`)
+    .eq('post_id', id)
+    .maybeSingle<ListingWithPost>();
+
+  return { data, error };
+};
+
+// 募集一覧の取得（新着順）
+export const listListings = async (limit = 20, offset = 0) => {
+  const { data, error } = await supabase
+    .from('listings')
+    .select(`post_id, organizer_id, slots_available, application_deadline, status`)
+    // created_at が無い想定のため post_id の降順（= 新しい投稿ほどUUIDが後）で代替
+    .order('post_id', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  return { data: (data as ListingWithPost[] | null) ?? null, error };
+};

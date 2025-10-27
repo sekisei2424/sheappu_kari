@@ -12,6 +12,7 @@ const TEST_EXPERIENCE_ID = 'e1a2b3c4-f5d6-7890-1234-567890abcdef';
 
 export default function CrudTester() {
   const [listingId, setListingId] = useState('');
+  const [postId, setPostId] = useState('');
   const [message, setMessage] = useState('テスト準備完了');
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
 
@@ -34,7 +35,7 @@ export default function CrudTester() {
         status: 'open',
     };
     
-    const { data, error } = await createListing(listingData);
+  const { data, error } = await createListing(listingData);
 
     if (error) {
         console.error('募集作成エラー:', error);
@@ -43,8 +44,11 @@ export default function CrudTester() {
     }
 
     const newPostId = data.post.id;
-    setListingId(newPostId);
-    setMessage(`✅ 募集作成成功！Post ID: ${newPostId}。画像アップロードに進んでください。`);
+    // listings は post_id を主キーとして持つ構成のため、詳細ページも post_id で参照する
+    const newListingId = newPostId;
+    setPostId(newPostId);
+    setListingId(newListingId);
+    setMessage(`✅ 募集作成成功！Post ID = Listing(post_id): ${newPostId}。画像アップロードに進んでください。`);
     
     // --- 2. 作成された募集の Read テスト ---
     const readResult = await getPostById(newPostId);
@@ -52,9 +56,10 @@ export default function CrudTester() {
   };
   
   const handleCleanup = async () => {
-    if (!listingId) return;
-    await deletePost(listingId);
-    setListingId('');
+  if (!postId) return;
+  await deletePost(postId);
+  setListingId('');
+  setPostId('');
     setUploadedImageUrl('');
     setMessage('🗑️ テストデータ削除完了。');
   };
@@ -70,6 +75,11 @@ export default function CrudTester() {
       <h1 className="text-3xl font-bold">統合テスト</h1>
       <p className="mb-4">ユーザーID: {TEST_USER_ID}</p>
       <p className="mb-4 text-lg font-semibold" style={{ color: message.startsWith('🚨') ? 'red' : 'green' }}>{message}</p>
+      {listingId && (
+        <p className="mb-2 text-sm">
+          確認: /search/listings/<span className="font-mono">{listingId}</span> にアクセスで詳細ページ（listings.post_id ベース）が開きます（/search 経由の移動でモーダル表示）。
+        </p>
+      )}
 
       {/* 実行ボタン */}
       <button 
@@ -81,11 +91,11 @@ export default function CrudTester() {
       </button>
 
       {/* 2. 画像アップロード (手動) */}
-      {listingId && (
+      {postId && (
         <div className="mt-6 p-4 border rounded shadow-md">
           <h2 className="text-xl font-semibold mb-3">2. 画像アップロードテスト (Storage + DB)</h2>
           <ExperienceImageUploader
-            postId={listingId}
+            postId={postId}
             userId={TEST_USER_ID}
             onUploadSuccess={setUploadedImageUrl}
           />
@@ -106,7 +116,8 @@ export default function CrudTester() {
         3. テストデータ削除 (Cleanup)
       </button>
       
-      {listingId && <p className="mt-4 text-sm">現在の募集ID: {listingId}</p>}
+  {listingId && <p className="mt-2 text-sm">現在の募集ID (listings.id): {listingId}</p>}
+  {postId && <p className="mt-1 text-sm">現在のポストID (posts.id): {postId}</p>}
     </div>
   );
 }

@@ -96,6 +96,8 @@ function Card({ post }: { post: Post }) {
 
 
 export default function Page() {
+  // DB上の実データ（ラベンダー農園スタッフ）をモーダルで試すための固定リンク
+  const demoListingId = "036e078c-bc56-4d7e-bee8-9340d39346fa";
   const [showSearch, setShowSearch] = useState(false);
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [selectedPrefectures, setSelectedPrefectures] = useState<string[]>([]);
@@ -146,6 +148,15 @@ export default function Page() {
         {/*データの先頭4件だけ表示*/}
           <h2 className="text-xl font-bold mb-4 text-orange-600">あなたへのおすすめ</h2>
           <div className="grid grid-cols-4 gap-4">
+            {/* DB案件（モーダル用デモ） */}
+            <Link href={`/search/listings/${demoListingId}`} className="no-underline text-black">
+              <div className="bg-white border rounded-lg shadow-md overflow-hidden relative cursor-pointer h-80 flex flex-col transition-transform duration-200 hover:shadow-lg hover:scale-105 p-3">
+                <div className="text-xs text-orange-600 font-semibold">デモ（DB）</div>
+                <h3 className="font-bold text-black mt-1">ラベンダー農園スタッフ</h3>
+                <p className="text-sm text-gray-700 mt-1 line-clamp-2">実データの案件詳細をモーダルで開きます</p>
+                <div className="mt-auto text-xs text-gray-500">北海道・日程は詳細で確認</div>
+              </div>
+            </Link>
             {posts.slice(0, 4).map((post) => (
               <Link key={post.id} href={`/search/posts/${post.id}`} className="no-underline text-black">
                 <Card post={post} />
