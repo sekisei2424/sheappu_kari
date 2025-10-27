@@ -62,6 +62,7 @@ const dummyCompanyPosts = [
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"tab1" | "tab2">("tab1");
+  const demoListingId = "036e078c-bc56-4d7e-bee8-9340d39346fa";
 
   return (
     <div
@@ -119,6 +120,29 @@ export default function HomePage() {
           padding: "16px",
         }}
       >
+        {/* モーダル動作デモへの最小導線（現在のレイアウトに付け足し） */}
+        <div style={{ marginBottom: "12px" }}>
+          <a
+            href={`/search/listings/${demoListingId}`}
+            style={{
+              display: "block",
+              textDecoration: "none",
+              color: "#222",
+              background: "#fff",
+              border: "1px solid #e5e7eb",
+              borderRadius: 8,
+              padding: 12,
+              boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+            }}
+          >
+            <div style={{ fontSize: 12, color: "#fb923c", fontWeight: 600 }}>デモ（DB）</div>
+            <div style={{ fontWeight: 700, marginTop: 4 }}>ラベンダー農園スタッフ</div>
+            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+              実データの案件詳細をモーダルで開きます
+            </div>
+          </a>
+        </div>
+
         {activeTab === "tab1" && (
           <div
             style={{
