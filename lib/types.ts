@@ -12,16 +12,6 @@ export type Post = {
   createdAt: string;
 };
 
-export type Tend = {
-  id: string;
-  title: string;
-  category: '農作業' | '地域イベント' | 'その他';
-  location: string;
-  reward: string;
-  imageUrl: string;
-  author: User;
-};
-
 export type UserProfile = {
   id: string;
   auth_id: string;

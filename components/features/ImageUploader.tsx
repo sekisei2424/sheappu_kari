@@ -41,7 +41,6 @@ export default function ExperienceImageUploader({ postId, userId, onUploadSucces
 
   return (
     <div>
-      {/* ... JSX 省略 ... */}
       <label 
         htmlFor="image-upload" 
         className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors"
