@@ -1,68 +1,104 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PostCard from "../../components/PostCard";
-
-const dummyPersonalPosts = [
-  {
-    id: 1,
-    user: {
-      name: "yudai",
-      avatar: "https://via.placeholder.com/40",
-      time: "2時間前",
-    },
-    image: "https://i.ytimg.com/vi/BCMKhsXcdJI/hq720.jpg", // 横画像
-    caption:
-      "誇る世全部僕が僕であるための要素を好きだよ全部君という簿黒い部分も恵まれなかった才能も丈夫じゃない性格もだけど大それた夢をちゃんと描くしたたかさを焦るよいつも 足音の群衆が僕の努力を引き裂いて何度君という闇の世話になったろうオンリーワンでもいいと無理やり付けたアイマスクの奥で一睡もしやしない自分も見飽きたよ #React #SNS風",
-  },
-  {
-    id: 2,
-    user: {
-      name: "taro",
-      avatar: "https://via.placeholder.com/40",
-      time: "1分前",
-    },
-    image: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308", // 縦画像
-    caption: "縦長画像のテスト投稿です。新しい冒険が始まる！ #縦画像 #テスト",
-  },
-  {
-    id: 3,
-    user: {
-      name: "buchi",
-      avatar: "https://via.placeholder.com/40",
-      time: "5分前",
-    },
-    image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
-    caption: "今日はとても楽しかった！ #日常 #写真",
-  },
-];
-
-const dummyCompanyPosts = [
-  {
-    id: 2,
-    user: {
-      name: "企業A",
-      avatar: "https://via.placeholder.com/40",
-      time: "1時間前",
-    },
-    image: "https://i.ytimg.com/vi/BCMKhsXcdJI/hq720.jpg",
-    caption: "企業の投稿内容です。",
-  },
-  {
-    id: 4,
-    user: {
-      name: "企業B",
-      avatar: "https://via.placeholder.com/40",
-      time: "10分前",
-    },
-    image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca",
-    caption: "新商品のお知らせです！ #新商品",
-  },
-];
+import { supabase } from "../../lib/supabase/client";
+import { getImagesForPost } from "../../lib/crud/experience_images";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"tab1" | "tab2">("tab1");
+  const [personalProfiles, setPersonalProfiles] = useState<any[]>([]);
+  const [companyProfiles, setCompanyProfiles] = useState<any[]>([]);
   const demoListingId = "036e078c-bc56-4d7e-bee8-9340d39346fa";
+
+  useEffect(() => {
+    const fetchProfilesAndPosts = async () => {
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*");
+
+      if (profilesError) {
+        console.error("Profiles Error:", profilesError.message);
+        return;
+      }
+
+      
+      const { data: postsData, error: postsError } = await supabase
+        .from("posts")
+        .select("id, description, created_at, likes");
+
+      if (postsError) {
+        console.error("Posts Error:", postsError.message);
+        return;
+      }
+
+      if (!profilesData || !postsData) return;
+
+      
+      const shuffledPosts = [...postsData].sort(() => Math.random() - 0.5);
+
+      // 個人・企業に分割
+      const personal = profilesData.filter((p) => !p.is_organizer);
+      const company = profilesData.filter((p) => p.is_organizer);
+
+      // 個人投稿に紐付け
+      const personalWithPosts = await Promise.all(
+        personal.map(async (profile) => {
+          const matchedPost = shuffledPosts.find(
+            (p) => p.id === profile.id && p.description
+          );
+          if (!matchedPost) return null;
+
+          const { data: imagesData, error: imagesError } = await getImagesForPost(
+            matchedPost.id
+          );
+          if (imagesError) console.error("Image Error:", imagesError.message);
+
+          return {
+            ...profile,
+            caption: matchedPost.description,
+            time: matchedPost.created_at,
+            image_url:
+              imagesData && imagesData.length > 0
+                ? imagesData[0].url || imagesData[0]
+                : "https://via.placeholder.com/600",
+          };
+        })
+      );
+
+      // 企業投稿に紐付け
+      const companyWithPosts = await Promise.all(
+        company.map(async (profile) => {
+          const matchedPost = shuffledPosts.find(
+            (p) => p.id === profile.id && p.description
+          );
+          if (!matchedPost) return null;
+
+          const { data: imagesData, error: imagesError } = await getImagesForPost(
+            matchedPost.id
+          );
+          if (imagesError) console.error("Image Error:", imagesError.message);
+
+          return {
+            ...profile,
+            caption: matchedPost.description,
+            time: matchedPost.created_at,
+            image_url:
+              imagesData && imagesData.length > 0
+                ? imagesData[0].url || imagesData[0]
+                : "https://via.placeholder.com/600",
+          };
+        })
+      );
+
+      // nullを除外してセット
+      setPersonalProfiles(personalWithPosts.filter(Boolean));
+      setCompanyProfiles(companyWithPosts.filter(Boolean));
+    };
+
+    fetchProfilesAndPosts();
+  }, []);
 
   return (
     <div
@@ -70,9 +106,10 @@ export default function HomePage() {
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
-        height: "100vh", // 追加
+        height: "100vh",
       }}
     >
+      {/* タブ切替 */}
       <div
         style={{
           position: "sticky",
@@ -92,7 +129,6 @@ export default function HomePage() {
             background: activeTab === "tab1" ? "#222" : "transparent",
             color: activeTab === "tab1" ? "#fff" : "#aaa",
             borderBottom: activeTab === "tab1" ? "2px solid #2196f3" : "none",
-            transition: "color 0.2s",
           }}
           onClick={() => setActiveTab("tab1")}
         >
@@ -106,21 +142,15 @@ export default function HomePage() {
             background: activeTab === "tab2" ? "#222" : "transparent",
             color: activeTab === "tab2" ? "#fff" : "#aaa",
             borderBottom: activeTab === "tab2" ? "2px solid #2196f3" : "none",
-            transition: "color 0.2s",
           }}
           onClick={() => setActiveTab("tab2")}
         >
           企業
         </button>
       </div>
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto", // 投稿部分だけスクロール
-          padding: "16px",
-        }}
-      >
-        {/* モーダル動作デモへの最小導線（現在のレイアウトに付け足し） */}
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+        {/* デモリンク */}
         <div style={{ marginBottom: "12px" }}>
           <a
             href={`/search/listings/${demoListingId}`}
@@ -135,49 +165,62 @@ export default function HomePage() {
               boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
             }}
           >
-            <div style={{ fontSize: 12, color: "#fb923c", fontWeight: 600 }}>デモ（DB）</div>
-            <div style={{ fontWeight: 700, marginTop: 4 }}>ラベンダー農園スタッフ</div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "#fb923c", fontWeight: 600 }}>
+              デモ（DB）
+            </div>
+            <div style={{ fontWeight: 700, marginTop: 4 }}>
+              ラベンダー農園スタッフ
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: "#6b7280",
+                marginTop: 4,
+              }}
+            >
               実データの案件詳細をモーダルで開きます
             </div>
           </a>
         </div>
 
+        {/* 個人投稿 */}
         {activeTab === "tab1" && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "24px",
-            }}
-          >
-            {dummyPersonalPosts.map((post) => (
-              <div key={post.id} style={{ width: "100%" }}>
-                <PostCard
-                  user={post.user}
-                  image={post.image}
-                  caption={post.caption}
-                />
-              </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {personalProfiles.map((userProfile) => (
+              <PostCard
+                key={userProfile.id}
+                user={{
+                  name: userProfile.name,
+                  avatar:
+                    userProfile.avatar_url || "https://via.placeholder.com/40",
+                  time: userProfile.time
+                    ? new Date(userProfile.time).toLocaleString("ja-JP")
+                    : "取得日未設定",
+                }}
+                image={userProfile.image_url}
+                caption={userProfile.caption}
+              />
             ))}
           </div>
         )}
+
+        {/* 企業投稿 */}
         {activeTab === "tab2" && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "24px",
-            }}
-          >
-            {dummyCompanyPosts.map((post) => (
-              <div key={post.id} style={{ width: "100%" }}>
-                <PostCard
-                  user={post.user}
-                  image={post.image}
-                  caption={post.caption}
-                />
-              </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {companyProfiles.map((userProfile) => (
+              <PostCard
+                key={userProfile.id}
+                user={{
+                  name: userProfile.name,
+                  avatar:
+                    userProfile.avatar_url || "https://via.placeholder.com/40",
+                  time: userProfile.time
+                    ? new Date(userProfile.time).toLocaleString("ja-JP")
+                    : "取得日未設定",
+                }}
+                image={userProfile.image_url}
+                caption={userProfile.caption}
+              />
             ))}
           </div>
         )}
