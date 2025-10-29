@@ -6,6 +6,7 @@ import { getAllPosts } from "@/lib/crud/posts";
 import { getImagesForPost } from "@/lib/crud/experience_images";
 import ListingDetail from "@/components/features/listings/ListingDetail";
 import { Search as SearchIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type Post = {
   id: string;
@@ -119,8 +120,7 @@ function Card({
 
 // メインページ
 export default function Page() {
-  // DB上の実データ（ラベンダー農園スタッフ）をモーダルで試すための固定リンク
-  const demoListingId = "036e078c-bc56-4d7e-bee8-9340d39346fa";
+  const router = useRouter();
 
   // 投稿データ
   const [posts, setPosts] = useState<Post[]>([]);
@@ -352,28 +352,11 @@ export default function Page() {
       post={post}
       likes={likes}
       toggleLike={toggleLike}
-      onClick={() => setSelectedPostId(post.id)}
+      onClick={() => router.push(`/search/listings/${post.id}`)}
     />
   ))}
 </div>
 
-
-
-      {/* モーダル */}
-      {selectedPostId && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="bg-white rounded-2xl w-11/12 max-w-2xl p-6 relative shadow-xl animate-fadeIn text-black">
-  <button
-    onClick={() => setSelectedPostId(null)}
-    className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-lg"
-  >
-    ✕
-  </button>
-  <ModalContent postId={selectedPostId} />
-</div>
-
-        </div>
-      )}
     </div>
   );
 }
