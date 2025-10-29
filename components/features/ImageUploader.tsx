@@ -1,26 +1,44 @@
 'use client';
 
-import React from 'react';
-// StorageとDB記録を統合した新しい関数を使用
-import { uploadImageAndRecord } from '@/lib/crud/experience_images'; 
+import React, { useEffect, useState } from 'react';
+import { uploadImageAndRecord } from '@/lib/crud/experience_images';
+import { supabase } from '@/lib/supabase/client'; // supabase クライアントを import
 
 interface UploaderProps {
-  // experienceIdではなく、postId (共通ID) に変更
-  postId: string; 
+  postId: string;
   userId: string;
   onUploadSuccess: (url: string) => void;
 }
 
 export default function ExperienceImageUploader({ postId, userId, onUploadSuccess }: UploaderProps) {
-  
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // ページロード時にログインユーザー確認
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        console.log("ログイン中ユーザー:", user);
+        setCurrentUserId(user.id);
+      } else {
+        console.warn("ユーザーがログインしていません");
+      }
+    };
+    fetchUser();
+  }, []);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // ログインしているか確認
+    if (!currentUserId) {
+      alert("ログインが必要です");
+      return;
+    }
+
     try {
-      // StorageへのアップロードとDB記録を同時に実行
-      // 関数名が uploadImageAndRecord に変更されている前提
-      const { data, error } = await uploadImageAndRecord(file, postId, userId);
+      const { data, error } = await uploadImageAndRecord(file, postId, currentUserId);
 
       if (error) {
         console.error('アップロード中にエラーが発生しました:', error);
@@ -28,7 +46,7 @@ export default function ExperienceImageUploader({ postId, userId, onUploadSucces
         return;
       }
 
-      const imageUrl = data?.[0]?.url; // 挿入されたレコードからURLを取得
+      const imageUrl = data?.[0]?.url;
       if (imageUrl) {
         console.log('画像アップロードと保存が完了しました。', imageUrl);
         onUploadSuccess(imageUrl);
@@ -41,7 +59,6 @@ export default function ExperienceImageUploader({ postId, userId, onUploadSucces
 
   return (
     <div>
-      {/* ... JSX 省略 ... */}
       <label 
         htmlFor="image-upload" 
         className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors"

@@ -13,10 +13,8 @@ export default function MainLayout({
 }) {
   const pathname = usePathname();
 
-  const hideSidebarPaths = ["/search", "/search/posts"]; 
-  const hideRightSidebar = hideSidebarPaths.some((p) =>
-    pathname.startsWith(p)
-  );
+    const hideRightSidebar = pathname.startsWith("/search");
+
 
   return (
     <div className="flex w-full min-h-screen text-white">
@@ -25,7 +23,7 @@ export default function MainLayout({
           <LeftSidebar />
         </header>
 
-        <main className="w-170 border-x border-gray-700 bg-white">
+        <main className={`border-x border-gray-700 bg-white ${hideRightSidebar ? "flex-grow" : "w-170"}`}>
           {children}
         </main>
 

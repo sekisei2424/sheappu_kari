@@ -6,13 +6,15 @@ import { supabase } from '../supabase/client';
 // 全ての子テーブルをJOINして、全ての投稿を取得する (フィード用)
 export const getAllPosts = async () => {
   // postsを起点に、post_typeに応じて子テーブルにJOINし、固有情報を取得
+  // type=1 (募集) の固有情報, type=2 (個人投稿) の固有情報, type=3 (企業投稿) の固有情報
+  
   const { data, error } = await supabase
     .from('posts')
     .select(`
       *,
-      listing:listings(*),            // type=1 (募集) の固有情報
-      reflection:user_reflections(*),  // type=2 (個人投稿) の固有情報
-      company_reflection:company_reflections(*) // type=3 (企業投稿) の固有情報
+      listing:listings(*),            
+      reflection:user_reflections(*),
+      company_reflection:company_reflections(*)
     `)
     // 必要に応じて、ここで created_at で並び替え
     .order('created_at', { ascending: false }); 
