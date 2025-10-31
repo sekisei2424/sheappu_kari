@@ -1,9 +1,7 @@
-// components/features/messages/MessageDisplay.tsx
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getConversation, createMessage, getLatestListingIdFromConversation, Message, createMessage as sendSystemMessage } from '@/lib/crud/messages';
+import { getConversation, createMessage, getLatestListingIdFromConversation, Message } from '@/lib/crud/messages';
 import { supabase } from '@/lib/supabase/client';
 import ReservationButton from '@/components/features/messages/ReservationButton';
 import { getUserProfile } from '@/lib/crud/profiles';
@@ -25,7 +23,7 @@ export default function MessageDisplay({ recipientId }: MessageDisplayProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // -----------------------------------------------------
-  // A. 全データフェッチと状態更新 (コアロジック)
+  // 全データフェッチと状態更新 (コアロジック)
   // -----------------------------------------------------
   const fetchAllData = async (userId: string) => {
     setLoading(true);
@@ -34,7 +32,7 @@ export default function MessageDisplay({ recipientId }: MessageDisplayProps) {
     const { data: profile } = await getUserProfile(userId);
     const isOrg = profile?.is_organizer || false;
     setIsOrganizer(isOrg);
-    console.log(`[DEBUG] 1. Is Organizer? ${isOrg}`);
+    // console.log(`[DEBUG] 1. Is Organizer? ${isOrg}`);
 
     // 2. メッセージ履歴の取得
     const { data: convData } = await getConversation(userId, recipientId);
@@ -42,20 +40,20 @@ export default function MessageDisplay({ recipientId }: MessageDisplayProps) {
 
     // 3. 募集IDの取得 (企業の場合のみ必要)
     if (isOrg) {
-      console.log(`[DEBUG] 1.5 Calling Listing ID Fetch with: UserA=${currentUserId}, UserB=${recipientId}`);
+      // console.log(`[DEBUG] 1.5 Calling Listing ID Fetch with: UserA=${userId}, UserB=${recipientId}`);
       const { listingId: fetchedListingId } = await getLatestListingIdFromConversation(userId, recipientId);
       const displayListingId = fetchedListingId || "NULL_NOT_FOUND";
       setListingId(fetchedListingId);
 
-      console.log(`[DEBUG] 2. Fetched Listing ID: ${displayListingId}`);
-      console.log(`[DEBUG] 3. Displaying Button: ${isOrg && fetchedListingId}`);
+      // console.log(`[DEBUG] 2. Fetched Listing ID: ${displayListingId}`);
+      // console.log(`[DEBUG] 3. Displaying Button: ${isOrg && fetchedListingId}`);
     }
 
     setLoading(false);
   };
 
   // -----------------------------------------------------
-  // B. 初期ロード: Authとデータフェッチの開始
+  // 初期ロード: Authとデータフェッチの開始
   // -----------------------------------------------------
   useEffect(() => {
     const loadAuthAndData = async () => {
@@ -63,11 +61,11 @@ export default function MessageDisplay({ recipientId }: MessageDisplayProps) {
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id || null;
 
-      // ★修正点 1: ロードが完了するまで currentUserId が null の場合は処理を中断/待機
+      // 認証情報がなければここで終了
       if (!userId) {
         setLoading(false);
         console.error("ユーザーがログインしていません。");
-        return; // 認証情報がなければここで終了
+        return;
       }
 
       // 認証が確認できた後、データフェッチへ
@@ -78,13 +76,10 @@ export default function MessageDisplay({ recipientId }: MessageDisplayProps) {
   }, [recipientId]);
 
   // -----------------------------------------------------
-  // C. 予約確定後の更新ロジック (ReservationButton に渡すコールバック)
+  // 予約確定後の更新ロジック (ReservationButton に渡すコールバック)
   // -----------------------------------------------------
   const handleBookingConfirmed = async () => {
     if (!currentUserId) return;
-    // 予約確定通知メッセージの自動送信 (UX向上)
-    const confirmationBody = "✅ 予約が正式に確定しました。当日はよろしくお願いします。";
-    await sendSystemMessage(currentUserId, recipientId, confirmationBody);
 
     // メッセージリストをリフレッシュ
     await fetchAllData(currentUserId);
