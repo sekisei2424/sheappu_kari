@@ -1,8 +1,6 @@
 import { supabase } from '../supabase/client';
 
 
-// messages.ts または types/index.ts に追加
-
 // Messageテーブルのレコードの基本構造
 export interface Message {
   id: string;
@@ -17,20 +15,15 @@ export interface Message {
   recipient: { id: string, name: string } | null;
 }
 
-/**
- * メッセージを送信し、オプションで募集に紐づける
- * @param senderId 送信者プロフィールID (UUID)
- * @param recipientId 受信者プロフィールID (UUID)
- * @param body メッセージ本文
- * @param listingId 関連する募集のID (応募時など)
- * @param isApplication 最初の応募メッセージであるか
- */
+// ------------------------------------------------------------------
+// 1. メッセージ送信 (Create)
+// ------------------------------------------------------------------
 export const createMessage = async (
   senderId: string,
   recipientId: string,
   body: string,
-  listingId: string | null = null, // 新しい引数
-  isApplication: boolean = false // 新しい引数
+  listingId: string | null = null,
+  isApplication: boolean = false
 ) => {
   const { data, error } = await supabase
     .from('messages')
@@ -39,48 +32,79 @@ export const createMessage = async (
         sender_id: senderId,
         recipient_id: recipientId,
         body: body,
-        related_listing_id: listingId, // 追加
-        is_application: isApplication // 追加
+        related_listing_id: listingId,
+        is_application: isApplication
       }
     ])
     .select();
   return { data, error };
 };
 
-/**
- * 特定のユーザー間の会話履歴を取得
- * @param userId1 ユーザー1のプロフィールID (UUID)
- * @param userId2 ユーザー2のプロフィールID (UUID)
- */
+// ------------------------------------------------------------------
+// 2. 会話履歴の取得 (Read Conversation)
+// ------------------------------------------------------------------
 export const getConversation = async (userId1: string, userId2: string): Promise<{ data: Message[] | null, error: any }> => {
+  const selectQuery = '*, sender:sender_id(name), recipient:recipient_id(name)';
+
   const { data, error } = await supabase
     .from('messages')
-    .select(`
-      *,
-      sender:sender_id(name),
-      recipient:recipient_id(name) 
-    `)
-    // ... (or クエリは省略)
-    .order('created_at', { ascending: true });
+    .select(selectQuery)
+
+    // ★修正適用: JSON論理結合を使用 (単一行で構文エラーを回避)
+    .or(`and(sender_id.eq.${userId1}, recipient_id.eq.${userId2}),and(sender_id.eq.${userId2}, recipient_id.eq.${userId1})`)
+
+    .order('created_at', { ascending: true }) as { data: Message[] | null, error: any };
 
   return { data, error };
 };
 
+// ------------------------------------------------------------------
+// 3. 募集IDの取得 (Get Latest Listing ID)
+// ------------------------------------------------------------------
 export const getLatestListingIdFromConversation = async (userId1: string, userId2: string) => {
-    const { data, error } = await supabase
-        .from('messages')
-        .select('related_listing_id')
-        .or(`sender_id.eq.${userId1},recipient_id.eq.${userId2}),(sender_id.eq.${userId2},recipient_id.eq.${userId1}`)
-        .not('related_listing_id', 'is', null) // NULLではないもののみ
-        .order('created_at', { ascending: false }) // 最新順
-        .limit(1)
-        .single();
 
-    if (error || !data) return { listingId: null };
+  // ★最重要修正: すべてのフィルタを一つの OR 句に統合する★
+  // 目的: ( (A->B OR B->A) ) AND (is_application=true) AND (related_listing_id IS NOT NULL)
 
-    return { listingId: data.related_listing_id };
+  const filterQuery = `
+    and(
+        or(sender_id.eq.${userId1}, recipient_id.eq.${userId2}), 
+        or(sender_id.eq.${userId2}, recipient_id.eq.${userId1})
+    ),
+    is_application.eq.true,
+    related_listing_id.not.is.null
+  `;
+
+  // さらに単純化し、PostgRESTが理解しやすい単一行のOR文に変換します。
+  const simplifiedFilter = `
+    and(
+      or(sender_id.eq.${userId1},recipient_id.eq.${userId2}),
+      or(sender_id.eq.${userId2},recipient_id.eq.${userId1}),
+      is_application.eq.true,
+      related_listing_id.not.is.null
+    )
+  `;
+
+  const { data, error } = await supabase
+    .from('messages')
+    .select('related_listing_id')
+
+    // ★修正適用: 全てのフィルタリング条件を単一の or() 句の引数として適用する
+    // OR句の引数にAND条件をカンマ区切りで渡す
+    .or(`and(sender_id.eq.${userId1},recipient_id.eq.${userId2},is_application.eq.true,related_listing_id.not.is.null),and(sender_id.eq.${userId2},recipient_id.eq.${userId1},is_application.eq.true,related_listing_id.not.is.null)`)
+
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error || !data) return { listingId: null };
+
+  return { listingId: data.related_listing_id };
 }
 
+// ------------------------------------------------------------------
+// 4. アプリケーションメッセージの作成 (Create Application Message)
+// ------------------------------------------------------------------
 export const createApplicationMessage = async (
   applicantId: string,
   recipientId: string,
@@ -102,16 +126,18 @@ export const createApplicationMessage = async (
   return { data, error };
 };
 
-
+// ------------------------------------------------------------------
+// 5. 会話リストの取得 (Get Conversations List)
+// ------------------------------------------------------------------
 export const getConversationsList = async (currentUserId: string) => {
   // ユーザーが sender または recipient であるすべてのメッセージを取得
   const { data: messages, error } = await supabase
     .from('messages')
     .select(`
-            *,
-            sender:sender_id(id, name),
-            recipient:recipient_id(id, name)
-        `)
+            *,
+            sender:sender_id(id, name),
+            recipient:recipient_id(id, name)
+        `)
     .or(`sender_id.eq.${currentUserId},recipient_id.eq.${currentUserId}`)
     .order('created_at', { ascending: false }); // 最新が上にくるように並び替え
 
