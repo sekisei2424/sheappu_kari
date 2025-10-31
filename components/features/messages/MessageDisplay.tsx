@@ -42,6 +42,7 @@ export default function MessageDisplay({ recipientId }: MessageDisplayProps) {
 
     // 3. 募集IDの取得 (企業の場合のみ必要)
     if (isOrg) {
+      console.log(`[DEBUG] 1.5 Calling Listing ID Fetch with: UserA=${currentUserId}, UserB=${recipientId}`);
       const { listingId: fetchedListingId } = await getLatestListingIdFromConversation(userId, recipientId);
       const displayListingId = fetchedListingId || "NULL_NOT_FOUND";
       setListingId(fetchedListingId);
@@ -50,132 +51,135 @@ export default function MessageDisplay({ recipientId }: MessageDisplayProps) {
       console.log(`[DEBUG] 3. Displaying Button: ${isOrg && fetchedListingId}`);
     }
 
-  setLoading(false);
-};
+    setLoading(false);
+  };
 
-// -----------------------------------------------------
-// B. 初期ロード: Authとデータフェッチの開始
-// -----------------------------------------------------
-useEffect(() => {
-  const loadAuthAndData = async () => {
-    // 1. AuthからログインユーザーIDを取得 (クライアント認証)
-    const { data: { user } } = await supabase.auth.getUser();
-    const userId = user?.id || null;
+  // -----------------------------------------------------
+  // B. 初期ロード: Authとデータフェッチの開始
+  // -----------------------------------------------------
+  useEffect(() => {
+    const loadAuthAndData = async () => {
+      // 1. AuthからログインユーザーIDを取得
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || null;
 
-    if (userId) {
+      // ★修正点 1: ロードが完了するまで currentUserId が null の場合は処理を中断/待機
+      if (!userId) {
+        setLoading(false);
+        console.error("ユーザーがログインしていません。");
+        return; // 認証情報がなければここで終了
+      }
+
+      // 認証が確認できた後、データフェッチへ
       setCurrentUserId(userId);
       await fetchAllData(userId); // データフェッチを開始
+    };
+    loadAuthAndData();
+  }, [recipientId]);
+
+  // -----------------------------------------------------
+  // C. 予約確定後の更新ロジック (ReservationButton に渡すコールバック)
+  // -----------------------------------------------------
+  const handleBookingConfirmed = async () => {
+    if (!currentUserId) return;
+    // 予約確定通知メッセージの自動送信 (UX向上)
+    const confirmationBody = "✅ 予約が正式に確定しました。当日はよろしくお願いします。";
+    await sendSystemMessage(currentUserId, recipientId, confirmationBody);
+
+    // メッセージリストをリフレッシュ
+    await fetchAllData(currentUserId);
+  };
+
+  // -----------------------------------------------------
+  // D. スクロールとメッセージ送信
+  // -----------------------------------------------------
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!messageBody.trim() || !currentUserId) return;
+
+    const bodyToSend = messageBody.trim();
+    setMessageBody('');
+
+    const { error } = await createMessage(currentUserId, recipientId, bodyToSend);
+
+    if (error) {
+      console.error('メッセージ送信失敗:', error);
+      alert('メッセージ送信に失敗しました。');
     } else {
-      setLoading(false);
-      console.error("ユーザーがログインしていません。");
+      // 送信成功後、リストを更新
+      await fetchAllData(currentUserId);
     }
   };
-  loadAuthAndData();
-}, [recipientId]);
 
-// -----------------------------------------------------
-// C. 予約確定後の更新ロジック (ReservationButton に渡すコールバック)
-// -----------------------------------------------------
-const handleBookingConfirmed = async () => {
-  if (!currentUserId) return;
-  // 予約確定通知メッセージの自動送信 (UX向上)
-  const confirmationBody = "✅ 予約が正式に確定しました。当日はよろしくお願いします。";
-  await sendSystemMessage(currentUserId, recipientId, confirmationBody);
+  if (loading) return <div className="p-4 text-center text-gray-400 bg-gray-900 h-full">メッセージを読み込み中...</div>;
+  if (!currentUserId) return <div className="p-4 text-center text-red-500">ログインしていません。</div>;
 
-  // メッセージリストをリフレッシュ
-  await fetchAllData(currentUserId);
-};
+  return (
+    <div className="flex flex-col h-[calc(100vh-64px)]">
 
-// -----------------------------------------------------
-// D. スクロールとメッセージ送信
-// -----------------------------------------------------
-useEffect(() => {
-  if (messagesEndRef.current) {
-    messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-  }
-}, [messages]);
-
-const handleSend = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!messageBody.trim() || !currentUserId) return;
-
-  const bodyToSend = messageBody.trim();
-  setMessageBody('');
-
-  const { error } = await createMessage(currentUserId, recipientId, bodyToSend);
-
-  if (error) {
-    console.error('メッセージ送信失敗:', error);
-    alert('メッセージ送信に失敗しました。');
-  } else {
-    // 送信成功後、リストを更新
-    await fetchAllData(currentUserId);
-  }
-};
-
-if (loading) return <div className="p-4 text-center text-gray-400 bg-gray-900 h-full">メッセージを読み込み中...</div>;
-if (!currentUserId) return <div className="p-4 text-center text-red-500">ログインしていません。</div>;
-
-return (
-  <div className="flex flex-col h-[calc(100vh-64px)]">
-
-    {/* 予約ボタンの表示ロジック */}
-    {isOrganizer && listingId && (
-      <div className="p-4 border-b border-gray-700 bg-gray-800">
-        <p className="text-sm text-yellow-300 mb-2">この会話は案件募集に紐づいています。</p>
-        <ReservationButton
-          organizerId={currentUserId}
-          applicantId={recipientId}
-          listingId={listingId}
-          onBookingConfirmed={handleBookingConfirmed} // コールバックを渡す
-        />
-      </div>
-    )}
-
-    {/* メッセージ履歴の表示エリア */}
-    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-900">
-      {messages.length === 0 && (
-        <p className="text-center text-gray-500">まだメッセージはありません。</p>
+      {/* 予約ボタンの表示ロジック */}
+      {isOrganizer && listingId && (
+        <div className="p-4 border-b border-gray-700 bg-gray-800">
+          <p className="text-sm text-yellow-300 mb-2">この会話は案件募集に紐づいています。</p>
+          <ReservationButton
+            organizerId={currentUserId}
+            applicantId={recipientId}
+            listingId={listingId}
+            onBookingConfirmed={handleBookingConfirmed} // コールバックを渡す
+          />
+        </div>
       )}
 
-      {messages.map((msg) => (
-        <div
-          key={msg.id}
-          className={`flex ${msg.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
-        >
-          <div
-            className={`max-w-xs p-3 rounded-xl shadow-md ${msg.sender_id === currentUserId ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'
-              }`}
-          >
-            <p className="text-sm font-semibold text-yellow-300">{msg.sender?.name || '不明なユーザー'}</p>
-            <p>{msg.body}</p>
-            <p className="text-xs opacity-70 mt-1">{new Date(msg.created_at).toLocaleTimeString()}</p>
-          </div>
-        </div>
-      ))}
-      <div ref={messagesEndRef} />
-    </div>
+      {/* メッセージ履歴の表示エリア */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-900">
+        {messages.length === 0 && (
+          <p className="text-center text-gray-500">まだメッセージはありません。</p>
+        )}
 
-    {/* メッセージ入力フォーム */}
-    <div className="border-t border-gray-700 p-4 bg-gray-900 sticky bottom-0">
-      <form onSubmit={handleSend} className="flex space-x-3">
-        <input
-          type="text"
-          value={messageBody}
-          onChange={(e) => setMessageBody(e.target.value)}
-          placeholder="メッセージを入力..."
-          className="flex-1 p-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-800 text-white"
-          disabled={loading}
-        />
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:bg-gray-500"
-          disabled={!messageBody.trim() || loading}
-        >
-          送信
-        </button>
-      </form>
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`flex ${msg.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-xs p-3 rounded-xl shadow-md ${msg.sender_id === currentUserId ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'
+                }`}
+            >
+              <p className="text-sm font-semibold text-yellow-300">{msg.sender?.name || '不明なユーザー'}</p>
+              <p>{msg.body}</p>
+              <p className="text-xs opacity-70 mt-1">{new Date(msg.created_at).toLocaleTimeString()}</p>
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* メッセージ入力フォーム */}
+      <div className="border-t border-gray-700 p-4 bg-gray-900 sticky bottom-0">
+        <form onSubmit={handleSend} className="flex space-x-3">
+          <input
+            type="text"
+            value={messageBody}
+            onChange={(e) => setMessageBody(e.target.value)}
+            placeholder="メッセージを入力..."
+            className="flex-1 p-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-800 text-white"
+            disabled={loading}
+          />
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:bg-gray-500"
+            disabled={!messageBody.trim() || loading}
+          >
+            送信
+          </button>
+        </form>
+      </div>
     </div>
-  </div>
-);
+  );
 }

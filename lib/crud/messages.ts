@@ -63,34 +63,13 @@ export const getConversation = async (userId1: string, userId2: string): Promise
 // ------------------------------------------------------------------
 export const getLatestListingIdFromConversation = async (userId1: string, userId2: string) => {
 
-  // ★最重要修正: すべてのフィルタを一つの OR 句に統合する★
-  // 目的: ( (A->B OR B->A) ) AND (is_application=true) AND (related_listing_id IS NOT NULL)
-
-  const filterQuery = `
-    and(
-        or(sender_id.eq.${userId1}, recipient_id.eq.${userId2}), 
-        or(sender_id.eq.${userId2}, recipient_id.eq.${userId1})
-    ),
-    is_application.eq.true,
-    related_listing_id.not.is.null
-  `;
-
-  // さらに単純化し、PostgRESTが理解しやすい単一行のOR文に変換します。
-  const simplifiedFilter = `
-    and(
-      or(sender_id.eq.${userId1},recipient_id.eq.${userId2}),
-      or(sender_id.eq.${userId2},recipient_id.eq.${userId1}),
-      is_application.eq.true,
-      related_listing_id.not.is.null
-    )
-  `;
+  // 実行されていないマルチラインの変数（filterQuery, simplifiedFilter）を削除しました。
 
   const { data, error } = await supabase
     .from('messages')
     .select('related_listing_id')
 
-    // ★修正適用: 全てのフィルタリング条件を単一の or() 句の引数として適用する
-    // OR句の引数にAND条件をカンマ区切りで渡す
+    // ★実行中の正しいクエリ（単一行）のみを維持★
     .or(`and(sender_id.eq.${userId1},recipient_id.eq.${userId2},is_application.eq.true,related_listing_id.not.is.null),and(sender_id.eq.${userId2},recipient_id.eq.${userId1},is_application.eq.true,related_listing_id.not.is.null)`)
 
     .order('created_at', { ascending: false })

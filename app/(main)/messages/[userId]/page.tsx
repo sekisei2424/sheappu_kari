@@ -1,32 +1,26 @@
-import { notFound } from 'next/navigation';
-import MessageDisplay from '@/components/features/messages/MessageDisplay';
-
-// サーバー側で認証情報を取得するための関数は使用を停止します
+import MessageDisplay from '@/components/features/messages/MessageDisplay'; 
+// サーバーサイドでのAuth/DB処理をすべて削除し、純粋なレイアウトコンポーネントに戻す
 
 interface MessagesPageProps {
   params: { userId: string };
 }
 
-// エラー回避のため、async キーワードを維持し、paramsを構造化代入で取得
-export default async function MessagesPage({ params }: MessagesPageProps) {
-
-  // App Routerの厳格なチェックを回避するための、最も安全なparamsの取得方法
-  const { userId: applicantId } = params;
-
-  // サーバー側での認証チェックとデータフェッチロジックはすべて削除し、
-  // クライアントコンポーネント (MessageDisplay) に委譲します。
+// サーバー認証やデータフェッチは行いません
+export default function MessagesPage({ params }: MessagesPageProps) {
+  
+  // params エラーを避けるため、安全に構造化代入を行う
+  const { userId: applicantId } = params; 
 
   return (
     <div>
-      <header className="sticky top-0 bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 p-4">
-        {/* 画面表示用 */}
-        <h1 className="text-xl font-bold">Message with {applicantId.slice(0, 8)}...</h1>
-      </header>
+        <header className="sticky top-0 bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 p-4">
+            <h1 className="text-xl font-bold">Message with {applicantId.slice(0, 8)}...</h1>
+        </header>
 
-      {/* MessageDisplayに相手のIDだけを渡す。MessageDisplay内で全ロジックを実行 */}
-      <MessageDisplay
-        recipientId={applicantId}
-      />
+        {/* MessageDisplayに相手のIDだけを渡す。MessageDisplay内で全ロジックを実行 */}
+        <MessageDisplay 
+            recipientId={applicantId} 
+        />
     </div>
   );
 }
