@@ -113,10 +113,10 @@ export const getConversationsList = async (currentUserId: string) => {
   const { data: messages, error } = await supabase
     .from('messages')
     .select(`
-            *,
-            sender:sender_id(id, name),
-            recipient:recipient_id(id, name)
-        `)
+      *,
+      sender:sender_id(id, name),
+      recipient:recipient_id(id, name)
+    `)
     .or(`sender_id.eq.${currentUserId},recipient_id.eq.${currentUserId}`)
     .order('created_at', { ascending: false }); // 最新が上にくるように並び替え
 
@@ -124,19 +124,20 @@ export const getConversationsList = async (currentUserId: string) => {
 
   // クライアント側で会話をグループ化し、最新メッセージと相手を特定
   const conversations: { [key: string]: any } = {};
+  const msgs = (messages as unknown as Message[]) || [];
 
-  messages.forEach((message) => {
+  msgs.forEach((message) => {
     // 会話相手のIDを特定
-    const otherUserId = message.sender.id === currentUserId ? message.recipient.id : message.sender.id;
+    const otherUserId = message.sender?.id === currentUserId ? message.recipient?.id : message.sender?.id;
 
     // 会話キーを作成 (sender/recipient のUUIDをソートして結合)
-    const conversationKey = [message.sender.id, message.recipient.id].sort().join('_');
+  const conversationKey = [message.sender?.id, message.recipient?.id].filter(Boolean).sort().join('_');
 
     // その会話の最新メッセージを保持
     if (!conversations[conversationKey]) {
       conversations[conversationKey] = {
         latestMessage: message,
-        otherUser: message.sender.id === currentUserId ? message.recipient : message.sender,
+        otherUser: message.sender?.id === currentUserId ? message.recipient : message.sender,
         unreadCount: 0 // 未読管理は別途ロジックが必要
       };
     }
