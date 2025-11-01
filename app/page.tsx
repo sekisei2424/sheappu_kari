@@ -5,7 +5,7 @@ import HomePage from "./(main)/page";
 
 export default function RootHomeWithMainLayout() {
   return (
-    <MainLayout>
+    <MainLayout modal={null}>
       <HomePage />
     </MainLayout>
   );
