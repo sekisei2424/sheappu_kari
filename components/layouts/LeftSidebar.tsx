@@ -17,7 +17,7 @@ export default function LeftSidebar() {
     { href: "/", label: "Top", icon: Home },
     { href: "/search", label: "Search", icon: Search },
     { href: "/tend", label: "Tend", icon: Bell },
-    profile && { href: `/messages/${profile.id}`, label: "Message", icon: Mail },
+    profile && { href: `/messages/list`, label: "Message", icon: Mail },
   ].filter(Boolean);
 
   const handleLogout = async () => {

@@ -1,7 +1,7 @@
 import { supabase } from '../supabase/client';
 
 // 参加申し込みを作成
-export const createBooking = async (userId: string, listingId: string) => { 
+export const createBooking = async (userId: string, listingId: string) => {
   const { data, error } = await supabase
     .from('booking')
     .insert([
@@ -13,11 +13,11 @@ export const createBooking = async (userId: string, listingId: string) => {
 };
 
 // 特定の募集の参加申し込みリストを取得
-export const getBookingsForListing = async (listingId: string) => { 
+export const getBookingsForListing = async (listingId: string) => {
   const { data, error } = await supabase
     .from('booking')
     // 参照するテーブルを users から profiles に変更し、カラム名も experience_id から listing_id に変更
-    .select('*, profile:user_id(name, email)') 
+    .select('*, profile:user_id(name, email)')
     .eq('listing_id', listingId); // 検索カラムを listing_id に変更
   return { data, error };
 };
@@ -29,5 +29,19 @@ export const deleteBooking = async (bookingId: string) => {
     .delete()
     .eq('id', bookingId)
     .select();
+  return { data, error };
+};
+
+export const confirmAndTrackBooking = async (userId: string, listingId: string) => {
+  const { data, error } = await supabase
+    .rpc('confirm_booking', {
+      p_user_id: userId,
+      p_listing_id: listingId
+    });
+
+  if (error) {
+    console.error('予約確定RPCエラー:', error);
+  }
+
   return { data, error };
 };
