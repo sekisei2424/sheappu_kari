@@ -101,13 +101,24 @@ export type ListingWithPost = {
 // 単一募集の取得（listings と posts を結合）
 // 引数 id は posts.id と同一（= listings.post_id）
 export const getListingById = async (id: string) => {
-  const { data, error } = await supabase
-    .from('listings')
-    .select(`post_id, organizer_id, slots_available, application_deadline, status`)
-    .eq('post_id', id)
-    .maybeSingle<ListingWithPost>();
-
-  return { data, error };
+    const { data, error } = await supabase
+        .from('listings')
+        // ★修正点: posts テーブルの SELECT から organizer_id を削除。
+        //          organizer_id は listings テーブル自身にあるため、posts からは不要。
+        .select(`
+            *,
+            posts (
+                title, 
+                description, 
+                date, 
+                location
+            ) 
+        `)
+        .eq('post_id', id) // listings の主キーは post_id です。
+        .single();
+    
+    // データ取得後、listing.posts にデータが入ります。
+    return { data, error };
 };
 
 // 募集一覧の取得（新着順）
