@@ -17,7 +17,7 @@ type Post = {
   location: string;
   municipality?: string;
   industry: string;
-  conditions: string[];
+  conditions: string | string[];
   likes?: number;
   image?: string;
 };

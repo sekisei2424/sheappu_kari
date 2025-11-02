@@ -4,13 +4,8 @@ import { usePathname } from "next/navigation";
 import LeftSidebar from "@/components/layouts/LeftSidebar";
 import RightSidebar from "@/components/layouts/RightSidebar";
 
-export default function MainLayout({
-  children,
-  modal,
-}: {
-  children: React.ReactNode;
-  modal?: React.ReactNode;
-}) {
+export default function MainLayout(props: any) {
+  const { children, modal } = props as { children: React.ReactNode; modal?: React.ReactNode };
   const pathname = usePathname();
 
     const hideRightSidebar = pathname.startsWith("/search");

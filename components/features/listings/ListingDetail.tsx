@@ -91,7 +91,18 @@ export default function ListingDetail({ id, onApplied }: ListingDetailProps) {
       setApplied(true);
       onApplied?.();
 
-      router.push(`/messages/${organizerId}`); // 会話相手（企業）のスレッドへ遷移
+      // モーダル内から直接別ページへ push すると、並列ルートのモーダルが残る場合があるため
+      // まずモーダルの onClose に接続されている `router.back()` を実行してモーダルを閉じ、
+      // その後メッセージ画面へ遷移します。
+      // replace を使うことで履歴を増やさずに遷移します。
+      try {
+        router.back();
+      } finally {
+        // 少し遅延してから確実に置換遷移
+        setTimeout(() => {
+          router.replace(`/messages/${organizerId}`);
+        }, 100);
+      }
 
     } finally {
       setApplying(false);

@@ -2,7 +2,8 @@ import MessageDisplay from '@/components/features/messages/MessageDisplay';
 // サーバーサイドでのAuth/DB処理をすべて削除し、純粋なレイアウトコンポーネントに戻す
 
 interface MessagesPageProps {
-  params: { userId: string };
+  // Next 15 may type params as a Promise in PageProps; allow any to satisfy the constraint
+  params: any;
 }
 
 // サーバー認証やデータフェッチは行いません
