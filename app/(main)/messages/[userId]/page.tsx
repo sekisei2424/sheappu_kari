@@ -1,6 +1,5 @@
 import MessageDisplay from '@/components/features/messages/MessageDisplay'; 
 // サーバーサイドでのAuth/DB処理をすべて削除し、純粋なレイアウトコンポーネントに戻す
-
 // サーバー認証やデータフェッチは行いません
 export default function MessagesPage(props: unknown) {
   const maybeProps = props as { params?: Record<string, string> } | undefined;
