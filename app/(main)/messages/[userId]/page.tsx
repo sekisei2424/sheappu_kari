@@ -1,15 +1,9 @@
 import MessageDisplay from '@/components/features/messages/MessageDisplay'; 
 // サーバーサイドでのAuth/DB処理をすべて削除し、純粋なレイアウトコンポーネントに戻す
-
-interface MessagesPageProps {
-  params: { userId: string };
-}
-
 // サーバー認証やデータフェッチは行いません
-export default function MessagesPage({ params }: MessagesPageProps) {
-  
-  // params エラーを避けるため、安全に構造化代入を行う
-  const { userId: applicantId } = params; 
+export default function MessagesPage(props: unknown) {
+  const maybeProps = props as { params?: Record<string, string> } | undefined;
+  const applicantId = String(maybeProps?.params?.userId ?? '');
 
   return (
     <div>
@@ -18,9 +12,7 @@ export default function MessagesPage({ params }: MessagesPageProps) {
         </header>
 
         {/* MessageDisplayに相手のIDだけを渡す。MessageDisplay内で全ロジックを実行 */}
-        <MessageDisplay 
-            recipientId={applicantId} 
-        />
+    <MessageDisplay recipientId={applicantId} />
     </div>
   );
 }

@@ -110,33 +110,41 @@ export const createApplicationMessage = async (
 // ------------------------------------------------------------------
 export const getConversationsList = async (currentUserId: string) => {
   // ユーザーが sender または recipient であるすべてのメッセージを取得
-  const { data: messages, error } = await supabase
+  // supabase の select で複雑なエイリアスを使うと TypeScript のチェーン上で型アサーションが
+  // チェーンを壊すことがあるため、一旦レスポンスを受け取ってからアサーションします。
+  const res = await supabase
     .from('messages')
     .select(`
-            *,
-            sender:sender_id(id, name),
-            recipient:recipient_id(id, name)
-        `)
+      *,
+      sender:sender_id(id, name),
+      recipient:recipient_id(id, name)
+    `)
     .or(`sender_id.eq.${currentUserId},recipient_id.eq.${currentUserId}`)
     .order('created_at', { ascending: false }); // 最新が上にくるように並び替え
 
+  const { data: messages, error } = res as { data: any[] | null, error: any };
+
   if (error) return { data: null, error };
+
+  // data が null の可能性を排除する（空配列として扱う）
+  if (!messages) return { data: [], error: null };
 
   // クライアント側で会話をグループ化し、最新メッセージと相手を特定
   const conversations: { [key: string]: any } = {};
+  const msgs = (messages as unknown as Message[]) || [];
 
-  messages.forEach((message) => {
+  msgs.forEach((message) => {
     // 会話相手のIDを特定
-    const otherUserId = message.sender.id === currentUserId ? message.recipient.id : message.sender.id;
+    const otherUserId = message.sender?.id === currentUserId ? message.recipient?.id : message.sender?.id;
 
     // 会話キーを作成 (sender/recipient のUUIDをソートして結合)
-    const conversationKey = [message.sender.id, message.recipient.id].sort().join('_');
+  const conversationKey = [message.sender?.id, message.recipient?.id].filter(Boolean).sort().join('_');
 
     // その会話の最新メッセージを保持
     if (!conversations[conversationKey]) {
       conversations[conversationKey] = {
         latestMessage: message,
-        otherUser: message.sender.id === currentUserId ? message.recipient : message.sender,
+        otherUser: message.sender?.id === currentUserId ? message.recipient : message.sender,
         unreadCount: 0 // 未読管理は別途ロジックが必要
       };
     }
